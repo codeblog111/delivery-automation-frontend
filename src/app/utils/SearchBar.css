@@ -1,0 +1,31 @@
+.searchBar {
+
+    position: relative;
+    max-width:200px;
+    margin: auto;
+    padding: 4vh 0;
+
+}
+
+
+.search__container {
+    display: flex;
+    border: 1px solid black;
+    border-radius: 30px;
+    padding-right: 20px;
+
+}
+
+.search__container>input {
+    border: none;
+    outline: none;
+    height: 50px;
+}
+
+@media only screen and (max-width: 500px ) {
+    .searchBar {
+        
+        left: 25vw
+    }
+
+}
