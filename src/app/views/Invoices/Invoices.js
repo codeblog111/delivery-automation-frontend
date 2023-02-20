@@ -232,7 +232,7 @@ const Invoices = () => {
                       
                           return (  <TableRow key={index}>
                                 <TableCell align="left" colSpan={3}>
-                                    <Checkbox size="small" />
+                                    {/* <Checkbox size="small" /> */}
                                     {subscriber.invoiceNumber}
                                 </TableCell>
                                 <TableCell align="left" colSpan={7}>
