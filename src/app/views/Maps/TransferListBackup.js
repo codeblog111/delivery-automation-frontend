@@ -131,7 +131,7 @@ export default function TransferList({ setConfirmedInvoices, setInvoices }) {
         console.log("FIRST INVOICE IS:", res.data.invoices[0])
 
         const inv = res.data.invoices.filter((obj, pos, arr) => {
-            return isDateToday(obj.soDeliveryDate) || obj.soDeliveryDate === "";
+            return isDateToday(obj.soDeliveryDate);
         })
         setLeft(inv)
         setArrLeft(inv)
@@ -196,9 +196,11 @@ export default function TransferList({ setConfirmedInvoices, setInvoices }) {
     // )
 
     return (
-<Grid container spacing={2} justifyContent="center" alignItems="center" sx={styles.container}>
-        <Grid item>
-                <Paper style={styles.leftPaper}>
+        <Grid container spacing={2} justifyContent="center" alignItems="center">
+
+
+            <Grid item>
+                <Paper sx={{ width: 300, height: 230, overflow: 'auto' }}>
                     <List dense component="div" role="list">
                         <Stack spacing={2} sx={{ width: 250 }}>
                             <Autocomplete
@@ -217,7 +219,6 @@ export default function TransferList({ setConfirmedInvoices, setInvoices }) {
                                     key={index}
                                     role="listitem"
                                     onClick={() => checkingLeft(invoice)}
-                                    style={styles.listItem}
                                 >
                                     <ListItemIcon>
                                         <Checkbox
@@ -300,7 +301,7 @@ export default function TransferList({ setConfirmedInvoices, setInvoices }) {
             </div>
             <Grid item>
                 <div className="">
-                    <Paper style={styles.rightPaper}>
+                    <Paper sx={{ width: 300, height: 230, overflow: 'auto' }}>
                         <List dense component="div" role="list">
                             <Stack spacing={2} sx={{ width: 250 }}>
                                 <Autocomplete
@@ -318,25 +319,25 @@ export default function TransferList({ setConfirmedInvoices, setInvoices }) {
                                     <ListItem
                                         key={index}
                                         role="listitem"
-                                        sx={styles.listItem}
                                         onClick={() => checkingRight(invoice)}
                                     >
                                         <ListItemIcon>
-                                        <Checkbox
-                                            checked={arrRightChecked.includes(invoice)}
-                                            tabIndex={-1}
-                                            disableRipple
-                                            inputProps={{
-                                                'aria-labelledby': labelId,
-                                            }}
-                                        />
+                                            <Checkbox
+                                                checked={
+                                                    arrRightChecked.includes(invoice)
+                                                }
+                                                tabIndex={-1}
+                                                disableRipple
+                                                inputProps={{
+                                                    'aria-labelledby': labelId,
+                                                }}
+                                            />
                                         </ListItemIcon>
                                         <ListItemText
                                             id={labelId}
                                             primary={invoice.invoiceNumber}
                                             secondary={invoice.customerName}
                                         />
-
                                     </ListItem>
                                 )
                             })}
@@ -346,86 +347,5 @@ export default function TransferList({ setConfirmedInvoices, setInvoices }) {
                 </div>
             </Grid>
         </Grid>
-        
     )
 }
-
-const styles = {
-    container: {
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: '2rem',
-    },
-    leftPaper: {
-      width: 300,
-      height: 230,
-      overflow: 'auto',
-      borderRadius: '10px',
-      boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-      backgroundColor: '#fff',
-      padding: '1rem'
-    },
-    rightPaper: {
-      width: 300,
-      height: 230,
-      overflow: 'auto',
-      borderRadius: '10px',
-      boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-      backgroundColor: '#fff',
-      padding: '1rem'
-    },
-    listItem: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0.5rem 1rem',
-      borderRadius: '10px',
-      backgroundColor: '#fff',
-      boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-      marginBottom: '0.5rem',
-      cursor: 'pointer',
-      transition: 'all 0.2s ease',
-      '&:hover': {
-        backgroundColor: '#f1f1f1'
-      }
-    },
-    checkbox: {
-      color: '#6d4c41'
-    },
-    buttonGroup: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center'
-    },
-    button: {
-      width: '3rem',
-      height: '3rem',
-      borderRadius: '50%',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      color: '#fff',
-      backgroundColor: '#6d4c41',
-      boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-      marginBottom: '0.5rem',
-      cursor: 'pointer',
-      transition: 'all 0.2s ease',
-      '&:hover': {
-        backgroundColor: '#8d6e63'
-      },
-      '&:disabled': {
-        backgroundColor: '#c7c7c7',
-        color: '#9e9e9e',
-        cursor: 'not-allowed'
-      }
-    },
-    confirmed: {
-      position: 'absolute',
-      top: '145px',
-      right: '430px',
-      zIndex: 0,
-      fontWeight: 'bold',
-      color: '#6d4c41'
-    }
-  }

@@ -9,6 +9,7 @@ import ListItemIcon from '@mui/material/ListItemIcon'
 import Checkbox from '@mui/material/Checkbox'
 import Button from '@mui/material/Button'
 import Divider from '@mui/material/Divider'
+import itemsData from '../Maps/DB/items.json'
 
 function not(a, b) {
     return a.filter((value) => b.indexOf(value) === -1)
@@ -22,73 +23,37 @@ function union(a, b) {
     return [...a, ...not(b, a)]
 }
 
-export default function TransferListResultSplit2(invoice) {
-    const [checked, setChecked] = React.useState([])
-    const [left, setLeft] = React.useState([invoice.invoice.invoice.products[1]])
-
-    const [right, setRight] = React.useState([])
-
-    const leftChecked = intersection(checked, left)
-    const rightChecked = intersection(checked, right)
-
-    const handleToggle = (value) => () => {
-        const currentIndex = checked.indexOf(value)
-        const newChecked = [...checked]
-
-        if (currentIndex === -1) {
-            newChecked.push(value)
-        } else {
-            newChecked.splice(currentIndex, 1)
-        }
-
-        setChecked(newChecked)
+function findProductName(productCode, products) {
+    // loop through the products array
+    for (let i = 0; i < products.length; i++) {
+    // check if the productCode of the current object matches the given productCode
+    if (products[i].prodCode === productCode) {
+        // return the productName if there is a match
+        console.log("Match found for productCode: " + productCode + " productName: " + products[i].prodDesc)
+        return products[i].prodDesc;
     }
-
-    const numberOfChecked = (items) => intersection(checked, items).length
-
-    const handleToggleAll = (items) => () => {
-        if (numberOfChecked(items) === items.length) {
-            setChecked(not(checked, items))
-        } else {
-            setChecked(union(checked, items))
-        }
     }
+    // if no match is found, return null or a suitable default value
+    console.log("No match found for productCode: " + productCode)
+    return productCode;
+}
 
-    const handleCheckedRight = () => {
-        setRight(right.concat(leftChecked))
-        setLeft(not(left, leftChecked))
-        setChecked(not(checked, leftChecked))
-    }
-
-    const handleCheckedLeft = () => {
-        setLeft(left.concat(rightChecked))
-        setRight(not(right, rightChecked))
-        setChecked(not(checked, rightChecked))
+export default function TransferListResultSplit2({ invoice: invoiceProducts, invoiceNumber, indexKey }) {
+    function getAlphabetLetter(index) {
+        // Convert index to corresponding ASCII code for lowercase letters
+        let letterCode = 97 + index;
+        
+        // Convert ASCII code to actual letter
+        let letter = String.fromCharCode(letterCode);
+        
+        return letter;
     }
 
     const customList = (title, items) => (
         <Card>
             <CardHeader
                 sx={{ px: 2, py: 1 }}
-                avatar={
-                    <Checkbox
-                        onClick={handleToggleAll(items)}
-                        checked={
-                            numberOfChecked(items) === items.length &&
-                            items.length !== 0
-                        }
-                        indeterminate={
-                            numberOfChecked(items) !== items.length &&
-                            numberOfChecked(items) !== 0
-                        }
-                        disabled={items.length === 0}
-                        inputProps={{
-                            'aria-label': 'all items selected',
-                        }}
-                    />
-                }
-                title={title}
-                subheader={`${numberOfChecked(items)}/${items.length} selected`}
+                title={`${title}${getAlphabetLetter(indexKey)}`}
             />
             <Divider />
             <List
@@ -102,30 +67,19 @@ export default function TransferListResultSplit2(invoice) {
                 component="div"
                 role="list"
             >
-                {items.splice(0).map((value, index) => {
+                {items.map((value, index) => {
                     const labelId = `transfer-list-all-item-${value.sNumber}-label`
 
                     return (
                         <ListItem
-                            key={value.sNumber}
+                            key={index}
                             role="listitem"
                             button
                       
                         >
-                            <ListItemIcon>
-                                <Checkbox
-                                 onClick={handleToggle(value)}
-                                    checked={checked.indexOf(value) !== -1}
-                                    tabIndex={-1}
-                                    disableRipple
-                                    inputProps={{
-                                        'aria-labelledby': labelId,
-                                    }}
-                                />
-                            </ListItemIcon>
                             <ListItemText
                                 id={labelId}
-                                primary={`${value.productCode}`}
+                                primary={`${findProductName(value.productCode, itemsData)}`}
                                 secondary={
                                     <>
                                         <div
@@ -151,78 +105,9 @@ export default function TransferListResultSplit2(invoice) {
         </Card>
     )
 
-    const customListLeft = (title, items) => (
-        <Card>
-            <CardHeader
-                sx={{ px: 2, py: 1 }}
-                avatar={
-                    <Checkbox
-                        onClick={handleToggleAll(items)}
-                        checked={
-                            numberOfChecked(items) === items.length &&
-                            items.length !== 0
-                        }
-                        indeterminate={
-                            numberOfChecked(items) !== items.length &&
-                            numberOfChecked(items) !== 0
-                        }
-                        disabled={items.length === 0}
-                        inputProps={{
-                            'aria-label': 'all items selected',
-                        }}
-                    />
-                }
-                title={title}
-                subheader={`${numberOfChecked(items)}/${items.length} selected`}
-            />
-            <Divider />
-            <List
-                sx={{
-                    width: 200,
-                    height: 230,
-                    bgcolor: 'background.paper',
-                    overflow: 'auto',
-                }}
-                dense
-                component="div"
-                role="list"
-            >
-                {items.map((value) => {
-                    const labelId = `transfer-list-all-item-${value}-label`
-
-                    return (
-                        <ListItem
-                            key={value}
-                            role="listitem"
-                            button
-                            onClick={handleToggle(value)}
-                        >
-                            <ListItemIcon>
-                                <Checkbox
-                                    checked={checked.indexOf(value) !== -1}
-                                    tabIndex={-1}
-                                    disableRipple
-                                    inputProps={{
-                                        'aria-labelledby': labelId,
-                                    }}
-                                />
-                            </ListItemIcon>
-                            <ListItemText
-                                id={labelId}
-                                primary={`${value.invoiceNumber}`}
-                            />
-                        </ListItem>
-                    )
-                })}
-                <ListItem />
-            </List>
-        </Card>
-    )
-
     return (
         <Grid container spacing={2} justifyContent="center" alignItems="center">
-            <Grid item>{customList('Main Invoice', left)}</Grid>
-           
+            <Grid item>{customList(invoiceNumber, invoiceProducts)}</Grid>
            
         </Grid>
     )

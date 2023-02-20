@@ -158,12 +158,13 @@ function ImportantDeliveries() {
                 }}
             >
                 <div style={{flex:".2"}} >
-                <p>Assign the driver and vehicle for  the extra delivery (Invoice is optional)</p>
+                <p>Assign the driver and vehicle for  the extra delivery</p>
                 </div>
                 <Autocomplete
                     disablePortal
                     id="combo-box-demo"
-                    options={invoices.map((d) => d.invoiceNumber)}
+                    options={["No Invoice", ...invoices.map((d) => d.invoiceNumber)]}
+                    defaultValue="No Invoice"
                     sx={{ flex: '.2', marginRight: '20px' }}
                     renderInput={(params) => (
                         <TextField {...params} label="Invoices" />

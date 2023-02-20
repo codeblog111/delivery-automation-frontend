@@ -246,15 +246,19 @@ const Deliveries = () => {
             return deliveries
         }
 
+        console.log("DELIVERIES ARE:", deliveries);
+
         return deliveries.filter((delivery) => {
-            var deliveryName = delivery.deliveryName
-            var deliveryNameLower = delivery.deliveryName.toLowerCase()
-            var deliveryCode = delivery.deliveryCode.toLowerCase()
+            var deliveryInvoices = delivery.invoices.map((invoice) => {
+                return invoice.toLowerCase()
+            })
+            var deliveryDriverCode = delivery.driver.driverCode.toLowerCase()
+            var deliveryVehicleCode = delivery.car.vehiculeCode.toLowerCase()
 
             return (
-                deliveryNameLower.includes(query) ||
-                deliveryName.includes(query) ||
-                deliveryCode.includes(query)
+                deliveryInvoices.filter(invoice => invoice.includes(query)) ||
+                deliveryDriverCode.includes(query) ||
+                deliveryVehicleCode.includes(query)
             )
         })
     }
@@ -277,7 +281,8 @@ const Deliveries = () => {
             )
         })
 
-        setInvoices(inv)
+        setInvoices(res.data.invoices)
+        console.log("Invoices ARE:", inv)
     }
 
     useEffect(() => {
@@ -298,7 +303,7 @@ const Deliveries = () => {
             })
             setSubmit(!submit)
         } catch (err) {
-            alert(err.message)
+            console.log(err.message)
         }
     }
 
@@ -359,7 +364,7 @@ const Deliveries = () => {
                                             (invoice) => {
                                                 if (invoice == inv._id) {
                                                 
-                                                    return inv.invoiceNumber
+                                                    return `${inv.invoiceNumber}\n`
                                                 }
                                             }
                                         )

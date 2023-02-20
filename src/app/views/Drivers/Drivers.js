@@ -130,7 +130,7 @@ const Drivers = () => {
             })
             setSubmit(!submit)
         } catch (err) {
-            alert(err.message)
+            console.log(err.message)
         }
     }
 
@@ -158,7 +158,6 @@ const Drivers = () => {
             <h1
                 style={{
                     textAlign: 'center',
-                    paddingBottom: '2vh',
                     paddingRight: '6vw',
                 }}
             >
@@ -169,7 +168,7 @@ const Drivers = () => {
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
                     style={{
-                        paddingTop: '4vh',
+                        paddingTop: '2vh',
                         paddingBottom: '4vh',
                     }}
                 />

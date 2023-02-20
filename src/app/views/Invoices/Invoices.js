@@ -14,6 +14,7 @@ import {
     Checkbox,
     InputBase,
     TextField,
+    Select
 } from '@mui/material'
 
 import { Box, styled } from '@mui/system'
@@ -26,6 +27,8 @@ import SearchBar from '../../utils/SearchBar'
 import BasicTabs from './BasicTabs'
 import FullScreenDialog from './FullScreenDialog'
 import { useDispatch } from 'react-redux'
+
+import items from "../Maps/DB/items.json";
 
 const StyledTable = styled(Table)(({ theme }) => ({
     whiteSpace: 'pre',
@@ -73,8 +76,6 @@ const Invoices = () => {
         setAnchorEl(null)
         setPopover(null)
         setCurrent(current=>current+1)
-      
-
     }
     const handleClick1 = (event) => {
         setAnchorEl1(event.currentTarget)
@@ -118,12 +119,28 @@ const Invoices = () => {
         return invoices.filter((invoice) => {
             var invoiceNumber = invoice.invoiceNumber.toLowerCase()
 
-            return invoiceNumber.includes(query)
+            return invoiceNumber.includes(query) || invoice.customerName.toLowerCase().includes(query.toLowerCase())
         })
     }
     const filteredInvoices = filterInvoice(invoices, searchQuery)
 
     const [current,setCurrent] = React.useState(1);
+
+    function findProductName(productCode, products) {
+        // loop through the products array
+        for (let i = 0; i < products.length; i++) {
+          // check if the productCode of the current object matches the given productCode
+          if (products[i].prodCode === productCode) {
+            // return the productName if there is a match
+            console.log("Match found for productCode: " + productCode + " productName: " + products[i].prodDesc)
+            return products[i].prodDesc;
+          }
+        }
+        // if no match is found, return null or a suitable default value
+        console.log("No match found for productCode: " + productCode)
+        return productCode;
+      }
+      
 
 
     
@@ -140,6 +157,8 @@ const Invoices = () => {
                 )
             })
 
+            console.log("INVOICES: ", inv);
+
             setInvoices(inv)
             dispatch({ type: "GET_INVOICES", payload:inv });
         }
@@ -155,7 +174,6 @@ const Invoices = () => {
             <h1
                 style={{
                     textAlign: 'center',
-                    paddingBottom: '2vh',
                     paddingRight: '6vw',
                 }}
             >
@@ -180,12 +198,12 @@ const Invoices = () => {
                     top: '120px',
                 }}
             >
-                <h4
+                {/* <h4
                     onClick={(e) => handleClick1(e)}
                     style={{ cursor: 'pointer' }}
                 >
                     <Button variant="outlined">Join</Button>
-                </h4>
+                </h4> */}
             </div>
             <StyledTable
                 onClick={() => {
@@ -194,13 +212,13 @@ const Invoices = () => {
             >
                 <TableHead>
                     <TableRow>
-                        <TableCell colSpan={2}>Invoice Number</TableCell>
-                        <TableCell colSpan={3}>Name</TableCell>
-                        <TableCell colSpan={3}>Product Name</TableCell>
-                        <TableCell>Address</TableCell>
-                        <TableCell>Contact</TableCell>
-                        <TableCell>Date</TableCell>
-                        <TableCell>Split</TableCell>
+                        <TableCell colSpan={3}>Invoice Number</TableCell>
+                        <TableCell colSpan={7}>Client Name</TableCell>
+                        <TableCell colSpan={4}>Products</TableCell>
+                        <TableCell colSpan={6}>Address</TableCell>
+                        <TableCell colSpan={2}>Contact</TableCell>
+                        <TableCell colSpan={2}>Date</TableCell>
+                        <TableCell colSpan={2}>Split</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -213,34 +231,91 @@ const Invoices = () => {
                            
                       
                           return (  <TableRow key={index}>
-                                <TableCell align="left" colSpan={2}>
-                                    <Checkbox size="medium" />
+                                <TableCell align="left" colSpan={3}>
+                                    <Checkbox size="small" />
                                     {subscriber.invoiceNumber}
                                 </TableCell>
-                                <TableCell align="left" colSpan={3}>
+                                <TableCell align="left" colSpan={7}>
                                     {subscriber.customerName}
                                 </TableCell>
-                                <TableCell align="left" colSpan={3}>
-                                    {subscriber.productDescription}
+                                <TableCell align="left" colSpan={4}>
+                                <Select
+                                    native
+                                    defaultValue=""
+                                    id="grouped-native-select"
+                                    sx={{
+                                        width: '100%',
+                                        maxWidth: '200px',
+                                        maxHeight: '40px',
+                                        borderRadius: '8px',
+                                        backgroundColor: '#F8F8F8',
+                                        '& .MuiSelect-outlined': {
+                                          paddingTop: '10px',
+                                          paddingBottom: '12px',
+                                        },
+                                        '& .MuiInputBase-input': {
+                                          fontSize: '12px',
+                                          fontWeight: 500,
+                                          color: '#444444',
+                                        },
+                                        '& .MuiSvgIcon-root': {
+                                          color: '#444444',
+                                        },
+                                        '@media (max-width: 600px)': {
+                                          maxWidth: '100px',
+                                        },
+                                    }}
+                                    MenuProps={{
+                                        anchorOrigin: {
+                                          vertical: 'bottom',
+                                          horizontal: 'left',
+                                        },
+                                        transformOrigin: {
+                                          vertical: 'top',
+                                          horizontal: 'left',
+                                        },
+                                        getContentAnchorEl: null,
+                                        sx: {
+                                          borderRadius: '8px',
+                                          backgroundColor: '#F8F8F8',
+                                          '& .MuiMenuItem-root': {
+                                            fontSize: '16px',
+                                            fontWeight: 500,
+                                            color: '#444444',
+                                          },
+                                          '& .MuiListItem-button:hover': {
+                                            backgroundColor: '#EEEEEE',
+                                          },
+                                        },
+                                      }}
+
+                                >
+                                    {subscriber.products.map((product, index) => {
+                                        return (
+                                            <option key={index} value={product}>
+                                                {findProductName(product.productCode, items)}
+                                            </option>
+                                        )
+                                    })
+                                    }
+                                </Select>
                                 </TableCell>
-                                <TableCell align="left">
-                                    <InputBase
-                                        name="address"
-                                        onChange={(e) => onChangeInput(e)}
-                                        value={subscriber.deliveryAddress}
-                                    ></InputBase>
+                                <TableCell align="left" colSpan={6}>
+                                    {subscriber.deliveryAddress}
                                 </TableCell>
-                                <TableCell align="left">
+                                <TableCell align="left" colSpan={2}>
                                     {subscriber.deliveryContactNumber}
                                 </TableCell>
-                                <TableCell align="left" colSpan={1.5}>
+                                <TableCell align="left" colSpan={2}>
                                     {subscriber.soDeliveryDate.slice(0, 10)}
                                 </TableCell>
 
-                                <TableCell>
+                                <TableCell colSpan={2}>
                                     <IconButton
-                                        onClick={(e) =>
+                                        onClick={(e) => {
                                             handleClick(e, subscriber._id, subscriber)
+                                            setInvoice(subscriber);
+                                        }
                                         }
                                     >
                                         <Icon>edit</Icon>

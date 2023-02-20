@@ -1,479 +1,519 @@
-import * as React from 'react'
-import Grid from '@mui/material/Grid'
-import List from '@mui/material/List'
-import Card from '@mui/material/Card'
-import CardHeader from '@mui/material/CardHeader'
-import ListItem from '@mui/material/ListItem'
-import ListItemText from '@mui/material/ListItemText'
-import ListItemIcon from '@mui/material/ListItemIcon'
-import Checkbox from '@mui/material/Checkbox'
-import Button from '@mui/material/Button'
-import Divider from '@mui/material/Divider'
-import { useDispatch, useSelector } from 'react-redux'
-import axiosInstance from '../../../axios'
+import React, { useState, useEffect } from "react";
+import { Select } from '@mui/material';
+import items from '../Maps/DB/items.json';
 
-function not(a, b) {
-    return a.filter((value) => b.indexOf(value) === -1)
-}
+const InvoiceBox = ({ invoice, numberOfLeftInvoices=2, setIsNextButtonDisabled, setFinalSplitInvoices }) => {
+    const [rightInvoiceBox, setRightInvoiceBox] = useState(invoice.products);
+    const [splitInvoices, setSplitInvoices] = useState(Array.from({ length: numberOfLeftInvoices }, () => []));
+    const [leftInvoiceBox, setLeftInvoiceBox] = useState([]);
+    const [currentSplitInvoiceIndex, setCurrentSplitInvoiceIndex] = useState(0);
 
-function intersection(a, b) {
-    return a.filter((value) => b.indexOf(value) !== -1)
-}
-
-function union(a, b) {
-    return [...a, ...not(b, a)]
-}
-
-export default function TransferList(invoice) {
-    const dispatch = useDispatch()
-
-    const products = useSelector((state) => state.invoice.products)
-    const splittedInvoice = useSelector(
-        (state) => state.invoice.splittedInvoice
-    )
-    const splits = useSelector((state) => state.invoice.splits)
-
-    const [checked, setChecked] = React.useState([])
-    const [left, setLeft] = React.useState(products)
-
-    const [right, setRight] = React.useState(splittedInvoice)
-
-    const leftChecked = intersection(checked, left)
-    const rightChecked = intersection(checked, right)
-
-    const handleToggle = (value) => () => {
-        const currentIndex = checked.indexOf(value)
-        const newChecked = [...checked]
-
-        if (currentIndex === -1) {
-            newChecked.push(value)
-        } else {
-            newChecked.splice(currentIndex, 1)
+    function findProductName(productCode, products) {
+      // loop through the products array
+      for (let i = 0; i < products.length; i++) {
+        // check if the productCode of the current object matches the given productCode
+        if (products[i].prodCode === productCode) {
+          // return the productName if there is a match
+          console.log("Match found for productCode: " + productCode + " productName: " + products[i].prodDesc)
+          return products[i].prodDesc;
         }
-
-        setChecked(newChecked)
+      }
+      // if no match is found, return null or a suitable default value
+      console.log("No match found for productCode: " + productCode)
+      return productCode;
     }
 
-    const numberOfChecked = (items) => intersection(checked, items).length
-
-    const handleToggleAll = (items) => () => {
-        if (numberOfChecked(items) === items.length) {
-            setChecked(not(checked, items))
-        } else {
-            setChecked(union(checked, items))
+    function areAnySplitsEmpty(arr) {
+      for (let i = 0; i < arr.length; i++) {
+        if (arr[i].length === 0) {
+          return true; // Found an empty array
         }
+      }
+      return false; // No empty arrays found
     }
+    
 
-    const handleCheckedRight = () => {
-        setRight(prev => prev.concat(leftChecked))
-        setLeft(prev => not(prev, leftChecked))
-        setChecked(prev => not(prev, leftChecked))
-        dispatch({ type: 'SELECTED', payload: right.concat(leftChecked) })
-        setLeft((prev) =>
-            prev.filter((x) => {
-                return right.indexOf(x) < 0
-            })
-        )
+    
+    useEffect(() => {
+      console.log("NOW IT's IN SPLIT: ", currentSplitInvoiceIndex)
+      console.log("CURRENT SPLIT INVOICES: ", splitInvoices);
+      setFinalSplitInvoices(splitInvoices);
+      if(rightInvoiceBox.length !== 0) {
+        setIsNextButtonDisabled(true)
+      } else if(rightInvoiceBox.length === 0 && !areAnySplitsEmpty(splitInvoices)) {
+        setIsNextButtonDisabled(false)
+      }
+    }, [currentSplitInvoiceIndex, rightInvoiceBox]);
+    
+
+  const handleRightPlus = (index) => {
+    const newRightInvoiceBox = [...rightInvoiceBox];
+    const product = newRightInvoiceBox[index];
+    product.productQuantity++;
+    setRightInvoiceBox(newRightInvoiceBox);
+
+    const indexInLeft = splitInvoices[currentSplitInvoiceIndex].findIndex(
+      (p) => findProductName(p.productCode, items) === findProductName(product.productCode, items)
+    );
+    if (indexInLeft === -1) return;
+    const newLeftInvoiceBox = [...splitInvoices[currentSplitInvoiceIndex]];
+    const alllInvoices = [...splitInvoices];
+    newLeftInvoiceBox[indexInLeft].productQuantity--;
+    if (newLeftInvoiceBox[indexInLeft].productQuantity === 0) {
+      newLeftInvoiceBox.splice(indexInLeft, 1);
     }
+    setLeftInvoiceBox(newLeftInvoiceBox);
+    alllInvoices[currentSplitInvoiceIndex] = newLeftInvoiceBox;
+    setSplitInvoices(alllInvoices);
+  };
 
-    const handleCheckedLeft = () => {
-        setLeft(left.concat(rightChecked))
-        setRight(not(right, rightChecked))
-        setChecked(not(checked, rightChecked))
+  const handleRightMinus = (index) => {
+    const newRightInvoiceBox = [...rightInvoiceBox];
+    const product = newRightInvoiceBox[index];
+    product.productQuantity--;
+    if (product.productQuantity === 0) {
+      newRightInvoiceBox.splice(index, 1);
     }
+    setRightInvoiceBox(newRightInvoiceBox);
 
-    const handleIncrement = (p) => {
-        if (p.productQuantity == 0) {
-            let index = left.indexOf(p.left)
-            left.splice(index, index)
-
-            setLeft((left) => left)
-        }
-
-        let originalProduct = { ...p }
-        let originalQuantity = 0
-        var mainProductQ = p.productQuantity
-        products.map((item) => {
-            if (item.sNumber == p.sNumber) {
-                originalQuantity += 1
-                originalProduct.productQuantity = originalQuantity
-
-                item.productQuantity -= 1
-            }
-        })
-        console.log(products)
-        dispatch({ type: 'INCREMENT', payload: products })
-
-        setRight([...right, originalProduct])
-
-        var occurence = right.reduce(function (result, current) {
-            if (!result[current['productCode']]) {
-                result[current['productCode']] = 0
-            }
-            result[current['productCode']]++
-            return result
-        }, {})
-
-        ;[Object.values(occurence)].map((item) => {
-            console.log(item)
-        })
+    const allInvoices = [...splitInvoices];
+    const indexInLeft = allInvoices[currentSplitInvoiceIndex].findIndex(
+      (p) => findProductName(p.productCode, items) === findProductName(product.productCode, items)
+    );
+    if (indexInLeft === -1) {
+        allInvoices[currentSplitInvoiceIndex] = [
+        ...allInvoices[currentSplitInvoiceIndex],
+        { productCode: product.productCode, productQuantity: 1 },
+        ];
+        setSplitInvoices(allInvoices);
+      setLeftInvoiceBox([
+        ...splitInvoices[currentSplitInvoiceIndex],
+        { productCode: product.productCode, productQuantity: 1 },
+      ]);
+    } else {
+      const newLeftInvoiceBox = [...splitInvoices[currentSplitInvoiceIndex]];
+      newLeftInvoiceBox[indexInLeft].productQuantity++;
+        allInvoices[currentSplitInvoiceIndex] = newLeftInvoiceBox;
+        setSplitInvoices(allInvoices);
+      setLeftInvoiceBox(newLeftInvoiceBox);
     }
-    const handleDecrement = (p) => {
-        console.log("PRODUCT IS:", p)
-        let originalProduct = structuredClone(p)
-        let originalQuantity = p.productQuantity
-        products = products.map((item) => {
-            console.log("ITEM IS:", item);
-            if (item.productCode == p.productCode) {
-                item.productQuantity = item.productQuantity - 1;
-                return item;
-            }
-            return item;
-        })
+  };
 
-        console.log("RIGHT IS:", right[right.indexOf(p)])
-        setLeft((prev) => [...prev, originalProduct])
+  const handleLeftPlus = (index) => {
+    const allInvoices = [...splitInvoices];
+    const newLeftInvoiceBox = [...splitInvoices[currentSplitInvoiceIndex]];
+    const product = newLeftInvoiceBox[index];
+    product.productQuantity++;
+    setLeftInvoiceBox(newLeftInvoiceBox);
+    allInvoices[currentSplitInvoiceIndex] = newLeftInvoiceBox;
+    setSplitInvoices(allInvoices);
 
-        if(right[right.indexOf(p)] !== undefined) {
-            right[right.indexOf(p)].productQuantity = right[right.indexOf(p)] - 1
-        }
-
-        // let result = findOcc(right, p.sNumber)
-        // console.log(result)
-
-        // if (result.length > 0) {
-        //     let noDup = [...new Set(right)]
-        //     noDup[0].productQuantity -= 1
-        //     if (noDup[0].productQuantity == 0) {
-        //         noDup.pop()
-        //     }
-
-        //     setRight(noDup)
-        // }
+    const indexInRight = rightInvoiceBox.findIndex(
+      (p) => findProductName(p.productCode, items) === findProductName(product.productCode, items)
+    );
+    if (indexInRight === -1) return;
+    const newRightInvoiceBox = [...rightInvoiceBox];
+    newRightInvoiceBox[indexInRight].productQuantity--;
+    if (newRightInvoiceBox[indexInRight].productQuantity === 0) {
+      newRightInvoiceBox.splice(indexInRight, 1);
     }
+    setRightInvoiceBox(newRightInvoiceBox);
+  };
 
-    function findOcc(arr, key) {
-        let arr2 = []
-
-        arr.forEach((x) => {
-            // Checking if there is any object in arr2
-            // which contains the key value
-            if (
-                arr2.some((val) => {
-                    return val[key] == x[key]
-                })
-            ) {
-                // If yes! then increase the occurrence by 1
-                arr2.forEach((k) => {
-                    if (k[key] === x[key]) {
-                        k['occurrence']++
-                    }
-                })
-            } else {
-                // If not! Then create a new object initialize
-                // it with the present iteration key's value and
-                // set the occurrence to 1
-                let a = {}
-                a[key] = x[key]
-                a['occurrence'] = 1
-                arr2.push(a)
-            }
-        })
-
-        return arr2
+  const handleLeftMinus = (index) => {
+    const allInvoices = [...splitInvoices];
+    const newLeftInvoiceBox = [...splitInvoices[currentSplitInvoiceIndex]];
+    const product = newLeftInvoiceBox[index];
+    product.productQuantity--;
+    if (product.productQuantity === 0) {
+        newLeftInvoiceBox.splice(index, 1);
     }
+    allInvoices[currentSplitInvoiceIndex] = newLeftInvoiceBox;
+    setSplitInvoices(allInvoices);
+    setLeftInvoiceBox(newLeftInvoiceBox);
 
-    const [i, setI] = React.useState([])
-    var occurence = left.reduce(function (result, current) {
-        if (!result[current['productCode']]) {
-            result[current['productCode']] = 0
-        }
-        result[current['productCode']]++
-        return result
-    }, {})
+    const indexInRight = rightInvoiceBox.findIndex(
+      (p) => findProductName(p.productCode, items) === findProductName(product.productCode, items)
+    );
+    if (indexInRight === -1) {
+      setRightInvoiceBox([
+        ...rightInvoiceBox,
+        { productCode: product.productCode, productQuantity: 1 },
+      ]);
+    } else {
+      const newRightInvoiceBox = [...rightInvoiceBox];
+      newRightInvoiceBox[indexInRight].productQuantity++;
+      setRightInvoiceBox(newRightInvoiceBox);
+    }
+  };
 
-    React.useEffect(() => {
-        var occurence = left.reduce(function (result, current) {
-            if (!result[current['productCode']]) {
-                result[current['productCode']] = 0
-            }
-            result[current['productCode']]++
-            return result
-        }, {})
+  const moveProductToLeftBox = (productName) => {
+    const allInvoices = [...splitInvoices];
+    const productIndex = rightInvoiceBox.findIndex((product) => findProductName(product.productCode, items) === findProductName(productName, items));
+    const leftProductIndex = splitInvoices[currentSplitInvoiceIndex].findIndex((product) => findProductName(product.productCode, items) === findProductName(productName, items));
+  
+    if (leftProductIndex !== -1) {
+        console.log("FROM FIRST IF STATEMENT")
+      setLeftInvoiceBox((prevLeftInvoiceBox) => {
+        const updatedLeftInvoiceBox = [...prevLeftInvoiceBox];
+        updatedLeftInvoiceBox[leftProductIndex].productQuantity += rightInvoiceBox[productIndex].productQuantity;
+        return updatedLeftInvoiceBox;
+      });
+      const updatedLeftInvoiceBox = [...splitInvoices[currentSplitInvoiceIndex]];
+        updatedLeftInvoiceBox[leftProductIndex].productQuantity += rightInvoiceBox[productIndex].productQuantity;
+        allInvoices[currentSplitInvoiceIndex] = updatedLeftInvoiceBox;
+        setSplitInvoices(allInvoices);
+    } else {
+        setLeftInvoiceBox((prevLeftInvoiceBox) => [...prevLeftInvoiceBox, { ...rightInvoiceBox[productIndex], productQuantity: rightInvoiceBox[productIndex].productQuantity }]);
+        allInvoices[currentSplitInvoiceIndex] = [...splitInvoices[currentSplitInvoiceIndex], { ...rightInvoiceBox[productIndex], productQuantity: rightInvoiceBox[productIndex].productQuantity }];
+        setSplitInvoices(allInvoices);
+    }
+  
+    setRightInvoiceBox((prevRightInvoiceBox) => {
+        console.log("FROM END OF FUNCTION")
+      const updatedRightInvoiceBox = [...prevRightInvoiceBox];
+      updatedRightInvoiceBox.splice(productIndex, 1);
+      console.log(updatedRightInvoiceBox)
+      return updatedRightInvoiceBox;
+    });
+  };
 
-        left.forEach((i, index) => {
-            if (i.productQuantity == 0) {
-                console.log('t')
-                setLeft(left.splice(index, index))
-            }
-        })
+  const moveAllProductsToLeft = () => {
+    const allInvoices = [...splitInvoices];
+    let updatedRightBox = [...rightInvoiceBox];
+    let updatedLeftBox = [...splitInvoices[currentSplitInvoiceIndex]];
+    
+    updatedRightBox.forEach(product => {
+      const leftProductIndex = updatedLeftBox.findIndex(leftProduct => findProductName(leftProduct.productCode, items) === findProductName(product.productCode, items));
+      
+      if (leftProductIndex !== -1) {
+        updatedLeftBox[leftProductIndex].productQuantity += product.productQuantity;
+      } else {
+        updatedLeftBox.push({...product});
+      }
+    });
+    
+    setRightInvoiceBox([]);
+    setLeftInvoiceBox(updatedLeftBox);
+    allInvoices[currentSplitInvoiceIndex] = updatedLeftBox;
+    setSplitInvoices(allInvoices);
+  };
 
-        right.forEach((i, index) => {
-            if (i.productQuantity == 0) {
-                console.log('t')
-                setRight(right.splice(index, index))
-            }
-        })
+  const moveAllProductsToRight = () => {
+    const allInvoices = [...splitInvoices];
+    let updatedLeftBox = [...splitInvoices[currentSplitInvoiceIndex]];
+    let updatedRightBox = [...rightInvoiceBox];
+    
+    updatedLeftBox.forEach(product => {
+      const rightProductIndex = updatedRightBox.findIndex(rightProduct => findProductName(rightProduct.productCode, items) === findProductName(product.productCode, items));
+      
+      if (rightProductIndex !== -1) {
+        updatedRightBox[rightProductIndex].productQuantity += product.productQuantity;
+      } else {
+        updatedRightBox.push({...product});
+      }
+    });
+    
+    setLeftInvoiceBox([]);
+    setRightInvoiceBox(updatedRightBox);
+    allInvoices[currentSplitInvoiceIndex] = [];
+    setSplitInvoices(allInvoices);
+  };
+  
+  
 
-        // const getI = async () => {
-        //     const res = await axiosInstance.get('/items/all?limit=100000')
+  const moveProductToRightBox = (productName) => {
+    const allInvoices = [...splitInvoices];
+    const productIndex = splitInvoices[currentSplitInvoiceIndex].findIndex((product) => findProductName(product.productCode, items) === findProductName(productName, items));
+    const rightProductIndex = rightInvoiceBox.findIndex((product) => findProductName(product.productCode, items) === findProductName(productName, items));
+  
+    if (rightProductIndex !== -1) {
+      setRightInvoiceBox((prevRightInvoiceBox) => {
+        const updatedRightInvoiceBox = [...prevRightInvoiceBox];
+        updatedRightInvoiceBox[rightProductIndex].productQuantity += splitInvoices[currentSplitInvoiceIndex][productIndex].productQuantity;
+        return updatedRightInvoiceBox;
+      });
+    } else {
+      setRightInvoiceBox((prevRightInvoiceBox) => [...prevRightInvoiceBox, { ...splitInvoices[currentSplitInvoiceIndex][productIndex], productQuantity: splitInvoices[currentSplitInvoiceIndex][productIndex].productQuantity }]);
+    }
+  
+    setLeftInvoiceBox((prevLeftInvoiceBox) => {
+      const updatedLeftInvoiceBox = [...prevLeftInvoiceBox];
+      updatedLeftInvoiceBox.splice(productIndex, 1);
+      return updatedLeftInvoiceBox;
+    });
+    const updatedLeftInvoiceBox = [...splitInvoices[currentSplitInvoiceIndex]];
+    updatedLeftInvoiceBox.splice(productIndex, 1);
+    allInvoices[currentSplitInvoiceIndex] = updatedLeftInvoiceBox;
+    setSplitInvoices(allInvoices);
+  };
+  
+  
 
-        //     setI(res.data.Items)
 
-        // }
-        // getI()
-    }, [dispatch, right, left, products, handleDecrement, handleIncrement])
+  return (
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", alignSelf: 'center', margin: 'auto' }}>
+      <div style={{ 
+        backgroundColor: "#F5F5F5",
+        borderRadius: 10,
+        width: "50%",
+        minWidth: 500,
+        padding: 20,
+        margin: 20,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.1)"
+      }}>
+        <h2 style={{ color: "#333333", fontWeight: "bold", marginBottom: 20 }}>Main Invoice</h2>
+        <button 
+          style={{ 
+            backgroundColor: "#007AFF", 
+            color: "#FFFFFF", 
+            borderRadius: 5, 
+            border: "none",
+            fontSize: 16,
+            padding: "10px 20px",
+            marginBottom: 20,
+            cursor: "pointer",
+            opacity: rightInvoiceBox.length === 0 ? 0.5 : 1
+          }} 
+          onClick={moveAllProductsToLeft} 
+          disabled={rightInvoiceBox.length === 0}
+        >
+          Move All Products
+        </button>
+        {rightInvoiceBox.map((product, index) => (
+          <div 
+            key={index} 
+            style={{ 
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center", 
+              marginBottom: 10,
+              borderBottom: "1px solid #CCCCCC",
+              paddingBottom: 10,
+              width: "100%"
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <span style={{ fontWeight: "bold", color: "#333333" }}>{findProductName(product.productCode, items)}{"\n"}</span>Quantity: {product.productQuantity}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 80 }}>
+              <button 
+                style={{ 
+                  backgroundColor: "#50C878", 
+                  color: "#FFFFFF", 
+                  borderRadius: 5, 
+                  border: "none",
+                  fontSize: 16,
+                  padding: 5,
+                  marginRight: 5,
+                  cursor: "pointer",
+                  opacity: !splitInvoices[currentSplitInvoiceIndex].find(item => findProductName(item.productCode, items) === findProductName(product.productCode, items)) ? 0.5 : 1
+                }} 
+                onClick={() => handleRightPlus(index)} 
+                disabled={!splitInvoices[currentSplitInvoiceIndex].find(item => findProductName(item.productCode, items) === findProductName(product.productCode, items))}
+              >
+                +
+              </button>
+              <button 
+                style={{ 
+                  backgroundColor: "#FF5B5B", 
+                  color: "#FFFFFF", 
+                  borderRadius: 5, 
+                  border: "none",
+                  fontSize: 16,
+                  padding: 5,
+                  marginRight: 5,
+                  cursor: "pointer",
+                  opacity: product.productQuantity === 0 ? 0.5 : 1
+                }} 
+                onClick={() => handleRightMinus(index)} 
+                disabled={product.productQuantity === 0}
+              >
+                -
+              </button>
+              <button 
+                style={{ 
+                  backgroundColor: "#007AFF", 
+                  color: "#FFFFFF", 
+                  borderRadius: 5, 
+                  border: "none",
+                  fontSize: 16,
+                  padding: 5,
+                  cursor: "pointer"
+                }} 
+                onClick={() => moveProductToLeftBox(product.productCode)}
+              >
+                Move Product
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
 
-    const customList = (title, items, key) => (
-        <Card key={key}>
-            <CardHeader
-                sx={{ px: 2, py: 1 }}
-                avatar={
-                    <Checkbox
-                        onClick={handleToggleAll(items)}
-                        checked={
-                            numberOfChecked(items) === items.length &&
-                            items.length !== 0
-                        }
-                        indeterminate={
-                            numberOfChecked(items) !== items.length &&
-                            numberOfChecked(items) !== 0
-                        }
-                        disabled={items.length === 0}
-                        inputProps={{
-                            'aria-label': 'all items selected',
-                        }}
-                    />
-                }
-                title={title}
-                subheader={`${numberOfChecked(items)}/${items.length} selected`}
-            />
-            <Divider />
-            <List
-                sx={{
-                    width: 200,
-                    height: 230,
-                    bgcolor: 'background.paper',
-                    overflow: 'auto',
+
+      <div style={{ 
+        backgroundColor: "#F5F5F5",
+        borderRadius: 10,
+        width: "50%",
+        minWidth: 500,
+        padding: 20,
+        margin: 20,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        boxShadow: "0px 0px 10px rgba(0, 0, 0, 0.1)"
+      }}>
+        <h2 style={{ color: "#333333", fontWeight: "bold", marginBottom: 20 }}>Split Invoice</h2>
+        <Select
+            native
+            onChange={(e) => setCurrentSplitInvoiceIndex(e.target.value)}
+            defaultValue=""
+            id="grouped-native-select"
+            sx={{
+                width: '100%',
+                maxWidth: '150px',
+                maxHeight: '30px',
+                marginBottom: "10px",
+                borderRadius: '8px',
+                backgroundColor: '#F8F8F8',
+                '& .MuiSelect-outlined': {
+                    paddingTop: '10px',
+                    paddingBottom: '12px',
+                },
+                '& .MuiInputBase-input': {
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    color: '#444444',
+                },
+                '& .MuiSvgIcon-root': {
+                    color: '#444444',
+                },
+                '@media (max-width: 600px)': {
+                    maxWidth: '100px',
+                },
+            }}
+            MenuProps={{
+                anchorOrigin: {
+                    vertical: 'bottom',
+                    horizontal: 'left',
+                },
+                transformOrigin: {
+                    vertical: 'top',
+                    horizontal: 'left',
+                },
+                getContentAnchorEl: null,
+                sx: {
+                    borderRadius: '8px',
+                    backgroundColor: '#F8F8F8',
+                    '& .MuiMenuItem-root': {
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    color: '#444444',
+                    },
+                    '& .MuiListItem-button:hover': {
+                    backgroundColor: '#EEEEEE',
+                    },
+                },
                 }}
-                dense
-                component="div"
-                role="list"
-                key={key}
-            >
-                {items.map((value, index) => {
-                    const labelId = `transfer-list-all-item-${
-                        value.sNumber + index + key
-                    }-label`
 
-                    return (
-                        <ListItem
-                            key={index}
-                            role="listitem"
-                            button
-                        >
-                            <ListItemIcon>
-                                <Checkbox
-                                    onClick={handleToggle(value)}
-                                    checked={checked.indexOf(value) !== -1}
-                                    tabIndex={-1}
-                                    disableRipple
-                                    inputProps={{
-                                        'aria-labelledby': labelId,
-                                    }}
-                                />
-                            </ListItemIcon>
-                            <ListItemText
-                                id={labelId}
-                                primary={`${value.productCode}`}
-                                secondary={
-                                    <>
-                                        <div
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                            }}
-                                        >
-                                            <Button
-                                                size="small"
-                                                onClick={(e) =>
-                                                    handleDecrement(value)
-                                                }
-                                            >
-                                                -
-                                            </Button>
-                                            <div>{}</div>
-                                            {`${parseInt(
-                                                value.productQuantity
-                                            )}`}
-                                            <Button
-                                                size="small"
-                                                onClick={(e) =>
-                                                    handleIncrement(value)
-                                                }
-                                            >
-                                                +
-                                            </Button>
-                                        </div>
-                                        <div style={{ paddingTop: '20px' }}>
-                                            {value.productDescription}
-                                        </div>
-                                    </>
-                                }
-                            />
-                        </ListItem>
-                    )
-                })}
+        >
+            {splitInvoices.map((invoice, index) => (
+                <option key={index} value={index}>Split {index + 1}</option>
+            ))}
+        </Select>
+        <button 
+          style={{ 
+            backgroundColor: "#007AFF", 
+            color: "#FFFFFF", 
+            borderRadius: 5, 
+            border: "none",
+            fontSize: 16,
+            padding: "10px 20px",
+            marginBottom: 20,
+            cursor: "pointer",
+            opacity: splitInvoices[currentSplitInvoiceIndex].length === 0 ? 0.5 : 1
+          }} 
+          onClick={moveAllProductsToRight} 
+          disabled={splitInvoices[currentSplitInvoiceIndex].length === 0}
+        >
+          Move All Products
+        </button>
+        {splitInvoices[currentSplitInvoiceIndex].map((product, index) => (
+          <div 
+            key={index} 
+            style={{ 
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center", 
+              marginBottom: 10,
+              borderBottom: "1px solid #CCCCCC",
+              paddingBottom: 10,
+              width: "100%"
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <span style={{ fontWeight: "bold", color: "#333333" }}>{findProductName(product.productCode, items) ? findProductName(product.productCode, items) : JSON.stringify(product)}{"\n"}</span>Quantity: {product.productQuantity}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minWidth: 80 }}>
+              <button 
+                style={{ 
+                  backgroundColor: "#50C878", 
+                  color: "#FFFFFF", 
+                  borderRadius: 5, 
+                  border: "none",
+                  fontSize: 16,
+                  padding: 5,
+                  marginRight: 5,
+                  cursor: "pointer",
+                  opacity: !rightInvoiceBox.find(item => findProductName(item.productCode, items) === findProductName(product.productCode, items)) ? 0.5 : 1
+                }} 
+                onClick={() => handleLeftPlus(index)} 
+                disabled={!rightInvoiceBox.find(item => findProductName(item.productCode, items) === findProductName(product.productCode, items))}
+              >
+                +
+              </button>
+              <button 
+                style={{ 
+                  backgroundColor: "#FF5B5B", 
+                  color: "#FFFFFF", 
+                  borderRadius: 5, 
+                  border: "none",
+                  fontSize: 16,
+                  padding: 5,
+                  marginRight: 5,
+                  cursor: "pointer",
+                  opacity: product.productQuantity === 0 ? 0.5 : 1
+                }} 
+                onClick={() => handleLeftMinus(index)} 
+                disabled={product.productQuantity === 0}
+              >
+                -
+              </button>
+              <button 
+                style={{ 
+                  backgroundColor: "#007AFF", 
+                  color: "#FFFFFF", 
+                  borderRadius: 5, 
+                  border: "none",
+                  fontSize: 16,
+                  padding: 5,
+                  cursor: "pointer"
+                }} 
+                onClick={() => moveProductToRightBox(product.productCode)}
+              >
+                Move Product
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  
+  )
+  
+};
 
-                <ListItem />
-            </List>
-        </Card>
-    )
-
-    const customListLeft = (title, items) => (
-        <Card>
-            <CardHeader
-                sx={{ px: 2, py: 1 }}
-                avatar={
-                    <Checkbox
-                        onClick={handleToggleAll(items)}
-                        checked={
-                            numberOfChecked(items) === items.length &&
-                            items.length !== 0
-                        }
-                        indeterminate={
-                            numberOfChecked(items) !== items.length &&
-                            numberOfChecked(items) !== 0
-                        }
-                        disabled={items.length === 0}
-                        inputProps={{
-                            'aria-label': 'all items selected',
-                        }}
-                    />
-                }
-                title={title}
-                subheader={`${numberOfChecked(items)}/${items.length} selected`}
-            />
-            <Divider />
-            <List
-                sx={{
-                    width: 200,
-                    height: 230,
-                    bgcolor: 'background.paper',
-                    overflow: 'auto',
-                }}
-                dense
-                component="div"
-                role="list"
-            >
-                {items.map((value) => {
-                    const labelId = `transfer-list-all-item-${value}-label`
-
-                    return (
-                        <ListItem
-                            key={value}
-                            role="listitem"
-                            button
-                            onClick={handleToggle(value)}
-                        >
-                            <ListItemIcon>
-                                <Checkbox
-                                    checked={checked.indexOf(value) !== -1}
-                                    tabIndex={-1}
-                                    disableRipple
-                                    inputProps={{
-                                        'aria-labelledby': labelId,
-                                    }}
-                                />
-                            </ListItemIcon>
-                            <ListItemText
-                                id={labelId}
-                                primary={`${value.invoiceNumber}`}
-                            />
-                        </ListItem>
-                    )
-                })}
-                <ListItem />
-            </List>
-        </Card>
-    )
-
-    return (
-        <div>
-            <Grid
-                container
-                spacing={6}
-                justifyContent="center"
-                alignItems="center"
-            >
-                <Grid item>{customList('Main Invoice', left)}</Grid>
-
-                <Grid item>
-                    <Grid container direction="column" alignItems="center">
-                        <Button
-                            sx={{ my: 0.5 }}
-                            variant="outlined"
-                            size="small"
-                            onClick={handleCheckedRight}
-                            disabled={leftChecked.length === 0}
-                            aria-label="move selected right"
-                        >
-                            &gt;
-                        </Button>
-                        <Button
-                            sx={{ my: 0.5 }}
-                            variant="outlined"
-                            size="small"
-                            onClick={handleCheckedLeft}
-                            disabled={rightChecked.length === 0}
-                            aria-label="move selected left"
-                        >
-                            &lt;
-                        </Button>
-                    </Grid>
-                </Grid>
-
-                <Grid item>
-                    {customList(`Split ${invoice.index + 1} `, right)}
-                </Grid>
-            </Grid>
-        </div>
-
-        // <Grid container spacing={2} justifyContent="center" alignItems="center">
-        //     <Grid item>{customList('Main Invoice', left)}</Grid>
-        //     {new Array(invoice.invoice.splits)
-        //                     .fill(0)
-        //                     .map((i, index) => {
-        //                         return (
-        //                           <Grid item key={index}>
-        //                           <Grid container direction="column" alignItems="center">
-        //                               <Button
-        //                                   sx={{ my: 0.5 }}
-        //                                   variant="outlined"
-        //                                   size="small"
-        //                                   onClick={handleCheckedRight}
-        //                                   disabled={leftChecked.length === 0}
-        //                                   aria-label="move selected right"
-        //                               >
-        //                                   &gt;
-        //                               </Button>
-        //                               <Button
-        //                                   sx={{ my: 0.5 }}
-        //                                   variant="outlined"
-        //                                   size="small"
-        //                                   onClick={handleCheckedLeft}
-        //                                   disabled={rightChecked.length === 0}
-        //                                   aria-label="move selected left"
-        //                               >
-        //                                   &lt;
-        //                               </Button>
-        //                           </Grid>
-        //                       </Grid>
-        //                         )
-        //                     })}
-
-        //     <Grid item>{customList(invoice.name, right)}</Grid>
-        // </Grid>
-    )
-}
+export default InvoiceBox;

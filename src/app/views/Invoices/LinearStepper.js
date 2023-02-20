@@ -17,7 +17,19 @@ export default function HorizontalLinearStepper(invoice) {
     const splittedInvoice = useSelector(
         (state) => state.invoice.splittedInvoice
     )
-    const [splits, setSplits] = React.useState(1)
+    const [splits, setSplits] = React.useState(2);
+
+    const [invoiceName, setInvoiceName] = React.useState(invoice.invoice.invoice.invoiceNumber);
+
+    React.useEffect(() => {
+        console.log("PRODUCTS: ", invoice.products);
+        console.log("INVOICE IS: ", invoice.invoice.invoice);
+    }, []);
+
+    const [isNextButtonDisabled, setIsNextButtonDisabled] = React.useState(false);
+    const [finalSplitInvoices, setFinalSplitInvoices] = React.useState([]);
+
+      
 
     const steps = [
         {
@@ -37,15 +49,12 @@ export default function HorizontalLinearStepper(invoice) {
                         }}
                         value={splits}
                         onChange={(e) => {
-                            dispatch({
-                                type: 'SET_SPLIT',
-                                payload: parseInt(e.target.value),
+                            setSplits(prev => {
+                                if(prev <= 2 && e.target.value <= 2) {
+                                    return 2
+                                }
+                                return e.target.value
                             })
-                            setSplits(
-                                e.target.value != ''
-                                    ? parseInt(e.target.value)
-                                    : splits
-                            )
                         }}
                     />
                 </div>
@@ -56,15 +65,17 @@ export default function HorizontalLinearStepper(invoice) {
             content: (
                 <div style={{ paddingTop: '4vh' }}>
                     <Grid container spacing={3}>
-                        {new Array(splits).fill(0).map((i, index) => (
-                            <Grid item>
-                                <TransferList
-                                    invoice={invoice.invoice}
-                                    splits={splits}
-                                    index={index}
-                                />
-                            </Grid>
-                        ))}
+                        <Grid item>
+                            <p style={{ fontSize: '13px' }}>You chose to split your main invoice into {splits} splits.{"\n"}
+                            Click on the dropdown menu to choose which split invoice to move the products into.
+                            </p>
+                            <TransferList
+                                invoice={invoice.invoice.invoice}
+                                numberOfLeftInvoices={splits}
+                                setIsNextButtonDisabled={setIsNextButtonDisabled}
+                                setFinalSplitInvoices={setFinalSplitInvoices}
+                            />
+                        </Grid>
                     </Grid>
                 </div>
             ),
@@ -74,29 +85,23 @@ export default function HorizontalLinearStepper(invoice) {
             content: (
                 <div style={{ paddingTop: '4vh' }}>
                     <Grid container spacing={3}>
-                        <Grid item xs={6}>
-                            <h3 style={{ textAlign: 'center' }}>INV5049261</h3>
-                            <TransferListResult0 invoice={invoice.invoice} />
-                        </Grid>
 
                         <Grid item xs={6}>
                             <Grid container>
-                                <Grid item xs={5}>
-                                    <h3 style={{ textAlign: 'center' }}>
-                                        INV5049261a
-                                    </h3>
-                                    <TransferListResultSplit
-                                        invoice={invoice.invoice}
-                                    />
-                                </Grid>
-                            </Grid>
-                            <Grid item xs={5}>
-                                <h3 style={{ textAlign: 'center' }}>
-                                    INV5049261b
-                                </h3>
-                                <TransferListResultSplit2
-                                    invoice={invoice.invoice}
-                                />
+                                {finalSplitInvoices.map((invoice, index) => {
+                                    return (
+                                        <Grid item xs={5}>
+                                            {/* <h3 style={{ textAlign: 'center' }}>
+                                                {invoiceName}{getAlphabetLetter(index)}
+                                            </h3> */}
+                                            <TransferListResultSplit2
+                                                invoice={invoice}
+                                                invoiceNumber={invoiceName}
+                                                indexKey={index}
+                                            />
+                                        </Grid>
+                                    )
+                                })}
                             </Grid>
                         </Grid>
                     </Grid>
@@ -164,13 +169,8 @@ export default function HorizontalLinearStepper(invoice) {
                     Back
                 </Button>
                 <Box sx={{ flex: '1 1 auto' }} />
-                {isStepOptional(activeStep) && (
-                    <Button color="inherit" onClick={handleSkip} sx={{ mr: 1 }}>
-                        Skip
-                    </Button>
-                )}
 
-                <Button onClick={handleNext}>
+                <Button onClick={handleNext} disabled={isNextButtonDisabled}>
                     {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
                 </Button>
             </Box>

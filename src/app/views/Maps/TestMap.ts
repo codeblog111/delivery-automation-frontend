@@ -156,12 +156,11 @@ function geocode(
 
     //Directions
 
-    const waypoints : any[] = invoices.filter((invoice) => {
-        return invoice.deliveryAddress.length > 0
-    }).map((invoice) => ({
-        location: invoice.deliveryAddress,
+    const waypoints : any[] = invoices.map((invoice) => {
+        return {
+        location: invoice.deliveryAddress === "" ? invoice.customerName : invoice.deliveryAddress,
         stopover: true,
-    }));
+    }});
 
     const directionsService = new google.maps.DirectionsService()
     const directionsRenderer = new google.maps.DirectionsRenderer({
@@ -180,7 +179,7 @@ function geocode(
     const map2 = document.getElementById('map') as HTMLElement
     map2.addEventListener('build', (e) => {
         displayRoute(
-            'Dubai - National Paints - United Arab Emirates',
+            'Maleha St - Industrial Area - Industrial Area 13 - Sharjah - United Arab Emirates',
             waypoints,
             directionsService,
             directionsRenderer
@@ -197,8 +196,8 @@ function displayRoute(
     service
         .route({
             origin: origin,
-            destination: waypoints[waypoints?.length - 1].location,
-            waypoints: waypoints.slice(0, waypoints?.length - 1),
+            destination: 'Maleha St - Industrial Area - Industrial Area 13 - Sharjah - United Arab Emirates',
+            waypoints: waypoints,
             travelMode: google.maps.TravelMode.DRIVING,
             avoidTolls: true,
             provideRouteAlternatives: true,

@@ -103,22 +103,33 @@ const Cars = () => {
         setRowsPerPage(+event.target.value)
         setPage(0)
     }
-    const [cars, setCars] = React.useState([])
+    const [cars, setCars] = React.useState([]);
+
+    const filterInvoice = (invoices, query) => {
+        if (!query) {
+            return invoices
+        }
+
+        return invoices.filter((invoice) => {
+            var invoiceNumber = invoice.invoiceNumber.toLowerCase()
+
+            return invoiceNumber.includes(query) || invoice.customerName.toLowerCase().includes(query.toLowerCase())
+        })
+    }
+
     const filterCar = (cars, query) => {
         if (!query) {
             return cars
         }
 
+        console.log("CARS ARE: ", cars);
         return cars.filter((car) => {
             
             var vehiculeCode = car.vehiculeCode.toLowerCase()
             var plateNumber = car.plateNumber.toLowerCase()
+            var model = car.model.toLowerCase()
 
-            return (
-                vehiculeCode.includes(query) ||
-                
-                plateNumber.includes(query)
-            )
+            return vehiculeCode.includes(query) || plateNumber.includes(query) || model.includes(query)
         })
     }
     const filteredCars = filterCar(cars, searchQuery)
@@ -144,7 +155,7 @@ const Cars = () => {
             })
             setSubmit(!submit)
         } catch (err) {
-            alert(err.message)
+            console.log(err.message);
         }
     }
 
@@ -157,7 +168,6 @@ const Cars = () => {
             <h1
                 style={{
                     textAlign: 'center',
-                    paddingBottom: '2vh',
                     paddingRight: '6vw',
                 }}
             >
@@ -168,7 +178,7 @@ const Cars = () => {
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
                     style={{
-                        paddingTop: '4vh',
+                        paddingTop: '2vh',
                         paddingBottom: '4vh',
                     }}
                 />

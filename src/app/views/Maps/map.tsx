@@ -24,6 +24,7 @@ import { isLatLngLiteral } from '@googlemaps/typescript-guards'
 import TransferList from './TransferList'
 import locationData from './locationData.js'; 
 import driverData from './driverData.js'; 
+import items from './DB/items.json';
 import {
     Button,
     FormControl,
@@ -38,6 +39,7 @@ import { DatePicker, LocalizationProvider, TimePicker } from '@mui/lab'
 import AdapterDateFns from '@mui/lab/AdapterDateFns'
 import { Navigate, useNavigate } from 'react-router-dom'
 import RenderMap from './RenderMap'
+import axiosInstance from "axios";
 
 const render = (status: Status) => {
     return <h1>{status}</h1>
@@ -83,7 +85,7 @@ const Asssignment: React.VFC = () => {
     const [selectedDate, setSelectedDate] = React.useState(Date.now())
     function handleDateChange(date) {
         setSelectedDate(date)
-        console.log("Date is: ", date)
+        console.log("Date is: ", new Date(Date.parse(date)));
     }
 
     //Select Driver State
@@ -204,6 +206,9 @@ const Asssignment: React.VFC = () => {
     const [confirmedInvoices, setConfirmedInvoices] = React.useState<any[]>([]);
     const [matchedDrivers, setMatchedDrivers] = React.useState<any[]>([]);
     const [matchedVehicles, setMatchedVehicles] = React.useState<any[]>([]);
+    const [invoices, setInvoices] = React.useState<any[]>([]);
+    const [productsWeight, setProductsWeight] = React.useState(0);
+    const [productsVolume, setProductsVolume] = React.useState(0);
 
 
     function checkStringPart(str1, str2) {
@@ -216,6 +221,7 @@ const Asssignment: React.VFC = () => {
     }
     
       
+    const maxWeight = 10000;
 
     function getBestVehicles(invoice) {
         if(invoice === undefined) return;
@@ -283,6 +289,52 @@ const Asssignment: React.VFC = () => {
       function removeDuplicates(arr) {
         return Array.from(new Set(arr));
       }
+
+
+
+
+    function calculateProductsWeightAndVolume(delivery, invoices, items) {
+        let totalProductsWeight = 0;
+        let totalProductsVolume = 0;
+        
+        for (let i = 0; i < delivery.length; i++) {
+            const invoiceNumber = delivery[i].invoiceNumber;
+            const invoice = invoices.find(inv => inv.invoiceNumber === invoiceNumber);
+        
+            if (invoice) {
+            const products = invoice.products;
+        
+            for (let j = 0; j < products.length; j++) {
+                const productCode = products[j].productCode;
+                const productQuantity = parseInt(products[j].productQuantity);
+        
+                const item = items.find(itm => itm.prodCode === productCode);
+        
+                if (item) {
+                const unitWeight = parseFloat(item.unitWeight);
+                totalProductsWeight += unitWeight * productQuantity;
+        
+                const uomDesc = item.UOM_DESC;
+                const uomParts = uomDesc.split(" ");
+                const uomQuantity = parseFloat(uomParts[0]);
+                const uomUnit = uomParts[1].toUpperCase();
+        
+                if (uomUnit === "LTR") {
+                    totalProductsVolume += uomQuantity * productQuantity;
+                } else if (uomUnit !== "LTR") {
+                    totalProductsVolume += (uomQuantity / 1000) * productQuantity;
+                }
+                }
+            }
+            }
+        }
+        
+        return { totalProductsWeight, totalProductsVolume };
+    }
+      
+
+
+
       
 
 
@@ -309,6 +361,13 @@ const Asssignment: React.VFC = () => {
             address: invoice.deliveryAddress,
             invoiceNumber: invoice.invoiceNumber,
         })))
+        console.log("CONFIRMED INVOICES:", confirmedInvoices);
+
+        const { totalProductsWeight, totalProductsVolume } = calculateProductsWeightAndVolume(confirmedInvoices, invoices, items);
+        console.log("TotalProductsWeight:", totalProductsWeight);
+        setProductsWeight(totalProductsWeight);
+        console.log("TotalProductsVolume:", totalProductsVolume);
+        setProductsVolume(totalProductsVolume);
     }, [confirmedInvoices])
 
 
@@ -388,7 +447,7 @@ const Asssignment: React.VFC = () => {
                         className=""
                         style={{
                             position: 'absolute',
-                            top: '120px',
+                            top: '100px',
                             left: '50px',
                         }}
                     >
@@ -398,8 +457,15 @@ const Asssignment: React.VFC = () => {
                         </h3>
                         <br/>
                     </div>
-                    <TransferList setConfirmedInvoices={setConfirmedInvoices} />
+                    <TransferList setConfirmedInvoices={setConfirmedInvoices} setInvoices={setInvoices} />
                 </div>
+                {/* {productsWeight > 0 && (
+                    <div>
+                        <h3>Product weight: {productsWeight} Kg /{maxWeight} Kg</h3>
+                        <h3></h3>
+                    </div>
+                )} */}
+                <br />
                 <br />
                 <br />
                 <br />
@@ -415,7 +481,7 @@ const Asssignment: React.VFC = () => {
                             className=""
                             style={{
                                 position: 'absolute',
-                                top: '460px',
+                                top: '530px',
                                 left: '50px',
                             }}
                         >
@@ -457,6 +523,7 @@ const Asssignment: React.VFC = () => {
                             </Select>
                         </FormControl>
                     </Grid>
+            
                     <Grid item xs={6} style={{ padding: '2vh 0 4vh 6vh' }}>
                         <h3>Confirm Vehicle</h3>
                         <FormControl sx={{ m: 1, minWidth: 120 }}>
@@ -491,11 +558,13 @@ const Asssignment: React.VFC = () => {
                             </Select>
                         </FormControl>
                     </Grid>
+                    <br />
+                    <br />
                     <div
                             className=""
                             style={{
                                 position: 'absolute',
-                                top: '650px',
+                                top: '710px',
                                 left: '50px',
                             }}
                         >
@@ -544,12 +613,15 @@ const Asssignment: React.VFC = () => {
                         </Grid>
                     </LocalizationProvider>
                     <br />
-                    <Grid item xs={12} style={{ padding: '0vh 0 2vh 2vh' }}>
+                    <br />
+                    <br />
+                    <br />
+                    <Grid item xs={12} style={{ padding: '0vh 0 2vh 2vh', marginTop: '30px' }}>
                     <div
                             className=""
                             style={{
                                 position: 'absolute',
-                                top: '740px',
+                                top: '820px',
                                 left: '50px',
                             }}
                         >
