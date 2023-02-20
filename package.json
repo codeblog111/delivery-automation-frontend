@@ -48,7 +48,7 @@
         "yup": "^0.32.11"
     },
     "scripts": {
-        "start": "PORT=80 react-app-rewired start --openssl-legacy-provider start",
+        "start": "react-app-rewired start --openssl-legacy-provider start",
         "build": "GENERATE_SOURCEMAP=false react-app-rewired build --resolve-fallback stream-browserify",
         "test": "react-app-rewired test",
         "eject": "react-app-rewired eject",
