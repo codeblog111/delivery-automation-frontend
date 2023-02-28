@@ -196,7 +196,7 @@ function displayRoute(
     service
         .route({
             origin: origin,
-            destination: 'Maleha St - Industrial Area - Industrial Area 13 - Sharjah - United Arab Emirates',
+            destination: 'Maleha Road Shk.Mohammed Bin Zayed Square - Industrial Area 13 - Sharjah - United Arab Emirates',
             waypoints: waypoints,
             travelMode: google.maps.TravelMode.DRIVING,
             avoidTolls: true,
@@ -211,6 +211,7 @@ function displayRoute(
         })
         .catch((e) => {
             alert('Could not display directions due to: ' + e)
+            console.log("WAYPOINTS", waypoints)
         })
 }
 

@@ -61,21 +61,20 @@ function ImportantDeliveries() {
     const [inputValue, setInputValue] = React.useState('');
     const [inputValue2, setInputValue2] = React.useState('');
     const [inputValue3, setInputValue3] = React.useState('');
-    const [reserved, setReserved] = useState([
-        {
-            driverCode: 1,
-            driverName: 'driver 1',
-            vehicleCode: 24,
-            status: 'reserved',
-        },
-        {
-            driverCode: 8,
-            driverName: 'driver 2',
-            vehicleCode: 22,
-            status: 'reserved',
-        },
-    ])
+    const [reserved, setReserved] = useState([])
     const [submit, setSubmit] = React.useState(false)
+
+
+    useEffect(() => {
+        const getInvoices = async () => {
+            const res = await axiosInstance.get('/invoice/all?limit=1000')
+
+            const inv = res.data.invoices.filter(invoice => `${invoice.invoiceNumber}` === "" || `${invoice.invoiceNumber}` === "No Invoice")
+
+            setReserved(inv);
+        }
+        getInvoices()
+    }, [])
 
     // Popover State
     const [anchorEl, setAnchorEl] = React.useState(null)

@@ -128,11 +128,22 @@ export default function TransferList({ setConfirmedInvoices, setInvoices }) {
 
         setInvoices(res.data.invoices);
         
-        console.log("FIRST INVOICE IS:", res.data.invoices[0])
+        console.log("FIRST INVOICE IS:", res.data.invoices[0]);
 
-        const inv = res.data.invoices.filter((obj, pos, arr) => {
+        const invoicesToday = res.data.invoices.filter((obj, pos, arr) => {
             return isDateToday(obj.soDeliveryDate) || obj.soDeliveryDate === "";
-        })
+        }).filter(
+            (invoice, index, self) =>
+              index === self.findIndex((t) => t.invoiceNumber === invoice.invoiceNumber)
+        );
+
+        const otherInvoices = res.data.invoices.filter(
+            (invoice, index, self) =>
+              index === self.findIndex((t) => t.invoiceNumber === invoice.invoiceNumber)
+        );
+
+        const inv = invoicesToday.length === 0 ? otherInvoices : invoicesToday;
+        
         setLeft(inv)
         setArrLeft(inv)
     }
