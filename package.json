@@ -49,7 +49,7 @@
     },
     "scripts": {
         "start": "react-app-rewired start --openssl-legacy-provider start",
-        "build": "GENERATE_SOURCEMAP=false react-app-rewired build --resolve-fallback stream-browserify",
+        "build": "cross-env GENERATE_SOURCEMAP=false react-scripts build",
         "test": "react-app-rewired test",
         "eject": "react-app-rewired eject",
         "ghp": "react-app-rewired build && gh-pages -d build"
