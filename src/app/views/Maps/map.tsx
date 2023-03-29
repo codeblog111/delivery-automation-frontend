@@ -90,9 +90,14 @@ const Asssignment: React.VFC = () => {
 
     //Select Driver State
     const handleChangeDeliveryStatus = (event) => {
-        setDriver(event.target.value)
+        // setDriver(event.target.value)
     }
-    const [driver, setDriver] = React.useState('Ilyas Ahmad')
+    const [driverName, setDriverName] = React.useState('');
+    const [driverID, setDriverID] = React.useState('');
+    const [vehicleNumber, setVehiculeNumber] = React.useState('');
+    const [vehicleID, setVehiculeID] = React.useState('');
+
+
     //Select cars State
     const handleChangeCar = (event) => {
         setCar(event.target.value)
@@ -277,7 +282,7 @@ const Asssignment: React.VFC = () => {
             matchedDrivers.push(match.firstDriver);
             matchedDrivers.push(match.secondDriver);
             matchedDrivers.push(match.thirdDriver);
-            matchedVehicles.push(match.vehicle_code);
+            matchedVehicles.push(match.plate_no);
         })
 
         return {
@@ -335,7 +340,25 @@ const Asssignment: React.VFC = () => {
 
 
 
-      
+    React.useEffect(() => {
+        const res = axiosInstance.post("https://delivery-automation-backend.vercel.app/api/v1/cars/findByPlateNumber", {
+            plateNumber: vehicleNumber
+        })
+        .then((res) => {
+            console.log("RES:", res.data.car);
+            setVehiculeID(res.data.car._id);
+        })
+    }, [vehicleNumber])      
+    
+    React.useEffect(() => {
+        const res = axiosInstance.post("https://delivery-automation-backend.vercel.app/api/v1/driver/findByName", {
+            driverName: driverName
+        })
+        .then((res) => {
+            console.log("RES:", res.data.driver);
+            setDriverID(res.data.driver._id);
+        })
+    }, [driverName])      
 
 
     React.useEffect(() => {
@@ -500,6 +523,10 @@ const Asssignment: React.VFC = () => {
                                 defaultValue="Ilyas Ahmad"
                                 id="grouped-native-select"
                                 label="Driver"
+                                onChange={(e) => {
+                                    console.log("Selected driver is: ", e.target.value);
+                                    setDriverName(e.target.value);
+                                }}
                             >
 
                                 {matchedDrivers.map((driver, index) => {
@@ -536,6 +563,10 @@ const Asssignment: React.VFC = () => {
                                 defaultValue="Ford"
                                 id="grouped-native-select"
                                 label="Grouping"
+                                onChange={(e) => {
+                                    console.log("Selected vehicle is: ", e.target.value);
+                                    setVehiculeNumber(e.target.value);
+                                }}
                             >
                                 {matchedVehicles.map((vehicle, index) => {
                                     return (
@@ -666,6 +697,15 @@ const Asssignment: React.VFC = () => {
                             border: '2px solid #240AED',
                         }}
                         onClick={(e) => {
+                            console.log(`car: ${vehicleID},\ndriver: ${driverID} invoices: [${confirmedInvoices.map((invoice) => `${invoice._id},\n`)}]`);
+                            const res = axiosInstance.post('https://delivery-automation-backend.vercel.app/api/v1/deliveries/create', {
+                                car: `${vehicleID}`,
+                                driver: `${driverID}`,
+                                invoices: confirmedInvoices.map((invoice) => `${invoice._id}`),
+                            })
+                            .then((res) => {
+                                console.log(res.data);
+                            })
                             let element: HTMLElement =
                                 document.getElementsByClassName(
                                     'button button-primary'
